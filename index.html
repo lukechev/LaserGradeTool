@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Site Grade & Level Calculator</title>
-    <!-- Code-injected App Icon -->
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180' width='180' height='180'><rect width='180' height='180' rx='40' fill='%231e293b'/><path d='M35 115 L80 130 L145 75' fill='none' stroke='%232563eb' stroke-width='14' stroke-linecap='round' stroke-linejoin='round'/><circle cx='35' cy='115' r='12' fill='%2364748b'/><circle cx='145' cy='75' r='12' fill='%2364748b'/><path d='M95 55 L125 55 M110 40 L110 70' fill='none' stroke='%23e2e8f0' stroke-width='6' stroke-linecap='round'/><path d='M45 45 L75 75 M75 45 L45 75' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linecap='round'/></svg>">
     <style>
         :root {
@@ -29,7 +28,7 @@
 
         .container {
             width: 100%;
-            max-width: 540px;
+            max-width: 640px; /* Slightly wider to easily accommodate the extra evidence columns on mobile screens */
         }
 
         h1 {
@@ -148,7 +147,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             text-align: left;
         }
 
@@ -186,7 +185,6 @@
     <div class="container">
         <h1>Drainage Grade Calc</h1>
 
-        <!-- INPUTS -->
         <div class="card">
             <div class="card-title">Site Data</div>
             
@@ -217,7 +215,6 @@
             <button class="btn" onclick="saveCurrentRun()">Save Run to Master Log</button>
         </div>
 
-        <!-- LASER OUTPUTS -->
         <div class="card">
             <div class="card-title">Laser Setup Results</div>
             <div class="result-row">
@@ -226,7 +223,7 @@
             </div>
             <div class="result-row">
                 <span>Grade Percentage:</span>
-                <span class="result-val" id="pct">0.0000 %</span>
+                <span class="result-val" id="pct">0.000 %</span>
             </div>
             <div class="result-row">
                 <span>Gradient Ratio:</span>
@@ -234,14 +231,15 @@
             </div>
         </div>
 
-        <!-- HISTORY RECORD -->
         <div class="card">
-            <div class="card-title">Master Spreadsheet Log</div>
+            <div class="card-title">Master Spreadsheet Log (Official Evidence)</div>
             <div class="table-responsive">
                 <table id="historyTable">
                     <thead>
                         <tr>
                             <th>Run (From/To)</th>
+                            <th>US IL</th>
+                            <th>DS IL</th>
                             <th>Dist</th>
                             <th>Fall</th>
                             <th>Grade %</th>
@@ -250,12 +248,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Saved rows append here cleanly -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
             
-            <!-- Complete Master Export Button -->
             <button class="btn btn-success" onclick="exportToCSV()">Export Complete Log (.CSV)</button>
         </div>
     </div>
@@ -281,118 +277,10 @@
 
             if (isNaN(us) || isNaN(ds) || isNaN(dist) || dist <= 0) {
                 fallEl.innerText = "0.000 m";
-                pctEl.innerText = "0.0000 %";
+                pctEl.innerText = "0.000 %";
                 ratioEl.innerText = "1 : --";
                 currentCalculatedData = null;
                 return;
             }
 
-            let fall = Math.round((us - ds) * 1000) / 1000;
-            let pct = (fall / dist) * 100;
-            let ratio = fall !== 0 ? (dist / fall) : 0;
-
-            fallEl.innerText = fall.toFixed(3) + " m";
-            pctEl.innerText = pct.toFixed(4) + " %";
-            ratioEl.innerText = ratio !== 0 ? "1 : " + ratio.toFixed(2) : "Flat (0)";
-
-            currentCalculatedData = {
-                label: usName + " → " + dsName,
-                dist: dist.toFixed(3),
-                fall: fall.toFixed(3),
-                pct: pct.toFixed(4),
-                ratio: ratio !== 0 ? "1:" + ratio.toFixed(2) : "Flat"
-            };
-        }
-
-        // Appends running data sequentially into local database container
-        function saveCurrentRun() {
-            runCalculator();
-
-            if (!currentCalculatedData) {
-                alert("Please enter a valid complete setup before saving.");
-                return;
-            }
-
-            // Fetch running history array or initialize clean slate
-            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
-            
-            // Push new data onto the end of the existing database array
-            history.push(currentCalculatedData);
-            localStorage.setItem('drainage_history', JSON.stringify(history));
-            
-            renderHistory();
-            
-            // Wipe inputs quickly so you can punch in the next leg instantly
-            document.getElementById('usName').value = "";
-            document.getElementById('dsName').value = "";
-            document.getElementById('usil').value = "";
-            document.getElementById('dsil').value = "";
-            document.getElementById('dist').value = "";
-            currentCalculatedData = null;
-        }
-
-        function renderHistory() {
-            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
-            let tbody = document.getElementById('historyTable').getElementsByTagName('tbody')[0];
-            
-            if (history.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #94a3b8;">No saved runs in log</td></tr>`;
-                return;
-            }
-
-            let html = "";
-            // Displays your newest entries at the top of the screen log for scannability
-            for (let i = history.length - 1; i >= 0; i--) { 
-                html += `<tr>
-                    <td><strong>${history[i].label}</strong></td>
-                    <td>${history[i].dist}m</td>
-                    <td>${history[i].fall}m</td>
-                    <td>${history[i].pct}%</td>
-                    <td>${history[i].ratio}</td>
-                    <td><button class="delete-btn" onclick="deleteRecord(${i})">×</button></td>
-                </tr>`;
-            }
-            tbody.innerHTML = html;
-        }
-
-        function deleteRecord(index) {
-            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
-            history.splice(index, 1);
-            localStorage.setItem('drainage_history', JSON.stringify(history));
-            renderHistory();
-        }
-
-        // Packages the entire combined array into one single clean file download
-        function exportToCSV() {
-            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
-            if (history.length === 0) {
-                alert("There is no saved history data to export yet.");
-                return;
-            }
-
-            let csvRows = [];
-            // CSV Structural Headers
-            csvRows.push("Run (From/To),Distance (m),Total Fall (m),Grade (%),Gradient Ratio");
-
-            // Chronological assembly so lines export in order from first run to last run
-            for (let item of history) {
-                csvRows.push(`"${item.label}",${item.dist},${item.fall},${item.pct},"${item.ratio}"`);
-            }
-
-            let csvString = csvRows.join("\n");
-            
-            let blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            let link = document.createElement("a");
-            
-            let today = new Date().toISOString().split('T')[0];
-            link.download = `complete_drainage_report_${today}.csv`;
-            
-            link.href = window.URL.createObjectURL(blob);
-            link.style.display = "none";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    </script>
-</body>
-</html>
+            let fall = Math.round((us - ds) * 1000)
