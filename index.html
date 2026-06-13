@@ -191,28 +191,28 @@
             <div class="row-inputs">
                 <div class="input-group">
                     <label for="usName">Start MH Name</label>
-                    <input type="text" id="usName" placeholder="e.g. MH1">
+                    <input type="text" id="usName">
                 </div>
                 <div class="input-group">
                     <label for="dsName">End MH Name</label>
-                    <input type="text" id="dsName" placeholder="e.g. MH2">
+                    <input type="text" id="dsName">
                 </div>
             </div>
 
             <div class="input-group">
-                <label for="usil">Upstream Invert Level (m)</label>
-                <input type="text" inputmode="decimal" id="usil" placeholder="e.g. 50.453" oninput="runCalculator()">
+                <label for="usil">Start Invert Level (m)</label>
+                <input type="text" inputmode="decimal" id="usil" oninput="runCalculator()">
             </div>
             <div class="input-group">
-                <label for="dsil">Downstream Invert Level (m)</label>
-                <input type="text" inputmode="decimal" id="dsil" placeholder="e.g. 50.101" oninput="runCalculator()">
+                <label for="dsil">End Invert Level (m)</label>
+                <input type="text" inputmode="decimal" id="dsil" oninput="runCalculator()">
             </div>
             <div class="input-group">
-                <label for="dist">Horizontal Distance (m)</label>
-                <input type="text" inputmode="decimal" id="dist" placeholder="e.g. 45.52" oninput="runCalculator()">
+                <label for="dist">Distance (m)</label>
+                <input type="text" inputmode="decimal" id="dist" oninput="runCalculator()">
             </div>
 
-            <button class="btn" onclick="saveCurrentRun()">Save Run to Master Log</button>
+            <button class="btn" onclick="saveCurrentRun()">Save Run</button>
         </div>
 
         <div class="card">
@@ -232,7 +232,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">Master Spreadsheet Log (Official Evidence)</div>
+            <div class="card-title">Master Spreadsheet Log</div>
             <div class="table-responsive">
                 <table id="historyTable">
                     <thead>
@@ -252,7 +252,7 @@
                 </table>
             </div>
             
-            <button class="btn btn-success" onclick="exportToCSV()">Export Complete Log (.CSV)</button>
+            <button class="btn btn-success" onclick="exportToCSV()">Export (.CSV)</button>
         </div>
     </div>
 
