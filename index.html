@@ -28,7 +28,7 @@
 
         .container {
             width: 100%;
-            max-width: 640px; /* Slightly wider to easily accommodate the extra evidence columns on mobile screens */
+            max-width: 640px;
         }
 
         h1 {
@@ -267,15 +267,19 @@
             let usName = document.getElementById('usName').value.trim().toUpperCase() || "START";
             let dsName = document.getElementById('dsName').value.trim().toUpperCase() || "END";
             
-            let us = parseFloat(document.getElementById('usil').value.replace(',', '.'));
-            let ds = parseFloat(document.getElementById('dsil').value.replace(',', '.'));
-            let dist = parseFloat(document.getElementById('dist').value.replace(',', '.'));
+            let usStr = document.getElementById('usil').value.replace(',', '.').trim();
+            let dsStr = document.getElementById('dsil').value.replace(',', '.').trim();
+            let distStr = document.getElementById('dist').value.replace(',', '.').trim();
+
+            let us = parseFloat(usStr);
+            let ds = parseFloat(dsStr);
+            let dist = parseFloat(distStr);
 
             let fallEl = document.getElementById('fall');
             let pctEl = document.getElementById('pct');
             let ratioEl = document.getElementById('ratio');
 
-            if (isNaN(us) || isNaN(ds) || isNaN(dist) || dist <= 0) {
+            if (usStr === "" || dsStr === "" || distStr === "" || isNaN(us) || isNaN(ds) || isNaN(dist) || dist <= 0) {
                 fallEl.innerText = "0.000 m";
                 pctEl.innerText = "0.000 %";
                 ratioEl.innerText = "1 : --";
@@ -283,4 +287,111 @@
                 return;
             }
 
-            let fall = Math.round((us - ds) * 1000)
+            let fall = Math.round((us - ds) * 1000) / 1000;
+            let pct = (fall / dist) * 100;
+            let ratio = fall !== 0 ? (dist / fall) : 0;
+
+            fallEl.innerText = fall.toFixed(3) + " m";
+            pctEl.innerText = pct.toFixed(3) + " %";
+            ratioEl.innerText = ratio !== 0 ? "1 : " + ratio.toFixed(2) : "Flat (0)";
+
+            currentCalculatedData = {
+                label: usName + " → " + dsName,
+                usil: us.toFixed(3),
+                dsil: ds.toFixed(3),
+                dist: dist.toFixed(3),
+                fall: fall.toFixed(3),
+                pct: pct.toFixed(3),
+                ratio: ratio !== 0 ? "1:" + ratio.toFixed(2) : "Flat"
+            };
+        }
+
+        function saveCurrentRun() {
+            runCalculator();
+
+            if (!currentCalculatedData) {
+                alert("Please enter a valid complete setup before saving.");
+                return;
+            }
+
+            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
+            history.push(currentCalculatedData);
+            localStorage.setItem('drainage_history', JSON.stringify(history));
+            
+            renderHistory();
+            
+            document.getElementById('usName').value = "";
+            document.getElementById('dsName').value = "";
+            document.getElementById('usil').value = "";
+            document.getElementById('dsil').value = "";
+            document.getElementById('dist').value = "";
+            currentCalculatedData = null;
+        }
+
+        function renderHistory() {
+            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
+            let tbody = document.getElementById('historyTable').getElementsByTagName('tbody')[0];
+            
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #94a3b8;">No saved runs in log</td></tr>`;
+                return;
+            }
+
+            let html = "";
+            for (let i = history.length - 1; i >= 0; i--) { 
+                // Double-check row structural properties to prevent crash on old layout data
+                let uLevel = history[i].usil || "0.000";
+                let dLevel = history[i].dsil || "0.000";
+                
+                html += `<tr>
+                    <td><strong>${history[i].label}</strong></td>
+                    <td>${uLevel}m</td>
+                    <td>${dLevel}m</td>
+                    <td>${history[i].dist}m</td>
+                    <td>${history[i].fall}m</td>
+                    <td>${history[i].pct}%</td>
+                    <td>${history[i].ratio}</td>
+                    <td><button class="delete-btn" onclick="deleteRecord(${i})">×</button></td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function deleteRecord(index) {
+            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
+            history.splice(index, 1);
+            localStorage.setItem('drainage_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function exportToCSV() {
+            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
+            if (history.length === 0) {
+                alert("There is no saved history data to export yet.");
+                return;
+            }
+
+            let csvRows = [];
+            csvRows.push("Run (From/To),Upstream Invert Level (m),Downstream Invert Level (m),Horizontal Distance (m),Total Fall (m),Grade (%),Gradient Ratio");
+
+            for (let item of history) {
+                let uLevel = item.usil || "0.000";
+                let dLevel = item.dsil || "0.000";
+                csvRows.push(`"${item.label}",${uLevel},${dLevel},${item.dist},${item.fall},${item.pct},"${item.ratio}"`);
+            }
+
+            let csvString = csvRows.join("\n");
+            let blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement("a");
+            let today = new Date().toISOString().split('T')[0];
+            link.download = `drainage_as_built_log_${today}.csv`;
+            
+            link.href = window.URL.createObjectURL(blob);
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
