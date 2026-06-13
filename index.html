@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Grade & Level Calculator</title>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg: #f1f5f9;
+            --text: #334155;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 540px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--accent);
+            border-bottom: 2px solid var(--bg);
+            padding-bottom: 5px;
+        }
+
+        .row-inputs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .row-inputs .input-group {
+            flex: 1;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            background-color: #f8fafc;
+        }
+
+        /* Forces text inputs to uppercase instantly on screen */
+        input[type="text"] {
+            text-transform: uppercase;
+        }
+
+        input:focus {
+            outline: 2px solid var(--accent);
+            background-color: #fff;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e2e8f0;
+            font-size: 1.05rem;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-val {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .btn:active {
+            opacity: 0.9;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Drainage Grade Calc</h1>
+
+        <div class="card">
+            <div class="card-title">Site Data</div>
+            
+            <div class="row-inputs">
+                <div class="input-group">
+                    <label for="usName">Start MH Name</label>
+                    <input type="text" id="usName" placeholder="e.g. MH1">
+                </div>
+                <div class="input-group">
+                    <label for="dsName">End MH Name</label>
+                    <input type="text" id="dsName" placeholder="e.g. MH2">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="usil">Upstream Invert Level (m)</label>
+                <input type="text" inputmode="decimal" id="usil" placeholder="e.g. 50.453" oninput="runCalculator()">
+            </div>
+            <div class="input-group">
+                <label for="dsil">Downstream Invert Level (m)</label>
+                <input type="text" inputmode="decimal" id="dsil" placeholder="e.g. 50.101" oninput="runCalculator()">
+            </div>
+            <div class="input-group">
+                <label for="dist">Horizontal Distance (m)</label>
+                <input type="text" inputmode="decimal" id="dist" placeholder="e.g. 45.52" oninput="runCalculator()">
+            </div>
+
+            <button class="btn" onclick="saveCurrentRun()">Save Run to History</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Laser Setup Results</div>
+            <div class="result-row">
+                <span>Total Fall:</span>
+                <span class="result-val" id="fall">0.000 m</span>
+            </div>
+            <div class="result-row">
+                <span>Grade Percentage:</span>
+                <span class="result-val" id="pct">0.0000 %</span>
+            </div>
+            <div class="result-row">
+                <span>Gradient Ratio:</span>
+                <span class="result-val" id="ratio">1 : --</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Saved Runs Log</div>
+            <div class="table-responsive">
+                <table id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Run (From/To)</th>
+                            <th>Dist</th>
+                            <th>Fall</th>
+                            <th>Grade %</th>
+                            <th>Ratio (1:)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCalculatedData = null;
+
+        window.onload = function() {
+            renderHistory();
+        };
+
+        function runCalculator() {
+            let usName = document.getElementById('usName').value.trim().toUpperCase() || "START";
+            let dsName = document.getElementById('dsName').value.trim().toUpperCase() || "END";
+            
+            // Clean comma inputs to dots just in case some mobile keyboards use a comma separator
+            let us = parseFloat(document.getElementById('usil').value.replace(',', '.'));
+            let ds = parseFloat(document.getElementById('dsil').value.replace(',', '.'));
+            let dist = parseFloat(document.getElementById('dist').value.replace(',', '.'));
+
+            let fallEl = document.getElementById('fall');
+            let pctEl = document.getElementById('pct');
+            let ratioEl = document.getElementById('ratio');
+
+            if (isNaN(us) || isNaN(ds) || isNaN(dist) || dist <= 0) {
+                fallEl.innerText = "0.000 m";
+                pctEl.innerText = "0.0000 %";
+                ratioEl.innerText = "1 : --";
+                currentCalculatedData = null;
+                return;
+            }
+
+            let fall = Math.round((us - ds) * 1000) / 1000;
+            let pct = (fall / dist) * 100;
+            let ratio = fall !== 0 ? (dist / fall) : 0;
+
+            fallEl.innerText = fall.toFixed(3) + " m";
+            pctEl.innerText = pct.toFixed(4) + " %";
+            ratioEl.innerText = ratio !== 0 ? "1 : " + ratio.toFixed(2) : "Flat (0)";
+
+            currentCalculatedData = {
+                label: usName + " → " + dsName,
+                dist: dist.toFixed(3) + "m",
+                fall: fall.toFixed(3) + "m",
+                pct: pct.toFixed(4) + "%",
+                ratio: ratio !== 0 ? "1:" + ratio.toFixed(2) : "Flat"
+            };
+        }
+
+        function saveCurrentRun() {
+            runCalculator();
+
+            if (!currentCalculatedData) {
+                alert("Please enter a valid complete setup before saving.");
+                return;
+            }
+
+            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
+            history.push(currentCalculatedData);
+            localStorage.setItem('drainage_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
+            let tbody = document.getElementById('historyTable').getElementsByTagName('tbody')[0];
+            
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #94a3b8;">No saved runs in log</td></tr>`;
+                return;
+            }
+
+            let html = "";
+            for (let i = history.length - 1; i >= 0; i--) { 
+                html += `<tr>
+                    <td><strong>${history[i].label}</strong></td>
+                    <td>${history[i].dist}</td>
+                    <td>${history[i].fall}</td>
+                    <td>${history[i].pct}</td>
+                    <td>${history[i].ratio}</td>
+                    <td><button class="delete-btn" onclick="deleteRecord(${i})">×</button></td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function deleteRecord(index) {
+            let history = JSON.parse(localStorage.getItem('drainage_history')) || [];
+            history.splice(index, 1);
+            localStorage.setItem('drainage_history', JSON.stringify(history));
+            renderHistory();
+        }
+    </script>
+</body>
+</html>
